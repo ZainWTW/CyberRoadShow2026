@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Vote on Question</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f8fafc;
+      color: #0f172a;
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      width: 100%;
+      max-width: 440px;
+      background: #ffffff;
+      padding: 28px 24px;
+      border-radius: 18px;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);
+      border: 1px solid #e2e8f0;
+    }
+    h2 { font-size: 1.35rem; margin: 0 0 16px; text-align: center; font-weight: 700; }
+    input[type="text"] {
+      width: 100%;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1.5px solid #cbd5e1;
+      font-size: 1rem;
+      margin-bottom: 14px;
+      outline: none;
+    }
+    input[type="text"]:focus { border-color: #2563eb; }
+    button.primary-btn {
+      width: 100%;
+      padding: 16px;
+      background: #111827;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .options-list { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
+    .opt-btn {
+      width: 100%;
+      padding: 18px 20px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #1e293b;
+      background: #f1f5f9;
+      border: 2px solid transparent;
+      border-radius: 14px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+    .opt-btn:active { background: #e2e8f0; transform: scale(0.98); }
+    #voted-indicator {
+      display: none;
+      text-align: center;
+      color: #059669;
+      font-weight: 600;
+      margin-top: 18px;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Screen 1: Collect Name -->
+  <div class="card" id="name-screen">
+    <h2>Join Live Quiz</h2>
+    <input type="text" id="username-input" placeholder="Enter your full name" />
+    <button class="primary-btn" onclick="saveName()">Join Session</button>
+  </div>
+
+  <!-- Screen 2: Dynamic Question & Options -->
+  <div class="card" id="poll-screen" style="display: none;">
+    <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; margin-bottom: 4px;">CURRENT QUESTION</div>
+    <h2 id="mobile-q-text">Waiting for host...</h2>
+    <div class="options-list" id="options-box"></div>
+    <div id="voted-indicator">✓ Response recorded! Watch the screen...</div>
+  </div>
+
+  <script>
+    // 1. FIREBASE CONFIGURATION
+    const firebaseConfig = { databaseURL: "https://wtw-quizroadshow2026-default-rtdb.asia-southeast1.firebasedatabase.app/" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // ================= 2. 10 DUMMY QUESTIONS (MUST MATCH INDEX.HTML) =================
+    const questions = [
+      {
+        q: "What is the primary entry point for 90% of enterprise breaches?",
+        options: ["Phishing Emails", "Zero-day Exploits", "Brute Force RDP", "Compromised USBs"]
+      },
+      {
+        q: "Which cloud architecture pattern provides the strongest isolation?",
+        options: ["Multi-Tenant Shared", "Single-Tenant VPC", "Serverless Functions", "Shared Database"]
+      },
+      {
+        q: "What is the recommended frequency for rotating privileged service account keys?",
+        options: ["Every 30-90 Days", "Once a Year", "Only on Breach", "Never if Complex"]
+      },
+      {
+        q: "Which protocol is the modern standard for passwordless authentication?",
+        options: ["FIDO2 / WebAuthn", "Kerberos", "NTLMv2", "SAML 1.1"]
+      },
+      {
+        q: "Where should automated DAST security scanning run in your pipeline?",
+        options: ["Staging Deployment", "Local Developer Machine", "Directly in Production", "Only Post-Incident"]
+      },
+      {
+        q: "Which vulnerability type bypasses client-side firewalls to query internal servers?",
+        options: ["SSRF (Server-Side)", "Cross-Site Scripting (XSS)", "SQL Injection", "Path Traversal"]
+      },
+      {
+        q: "What is our team's biggest operational focus this quarter?",
+        options: ["Cloud Security Posture", "CI/CD Pipeline Speed", "Mobile App UI", "API Modernization"]
+      },
+      {
+        q: "What is the best defense against API authorization bypass (BOLA/IDOR)?",
+        options: ["Object-Level Checks", "Basic HTTP Auth", "Obscure Query IDs", "WAF Rules Only"]
+      },
+      {
+        q: "Which primary language should our automation team standardize on?",
+        options: ["PowerShell", "Python", "Go", "TypeScript"]
+      },
+      {
+        q: "Should interactive live polling become a standard part of all team meetings?",
+        options: ["Yes, every meeting", "Bi-weekly syncs", "Monthly all-hands only", "Keep it as-is"]
+      }
+    ];
+
+    let currentQIndex = -1;
+    let userName = localStorage.getItem("quiz_userName") || "";
+
+    if (userName) showPollScreen();
+
+    function saveName() {
+      const input = document.getElementById("username-input").value.trim();
+      if (!input) return alert("Please enter your name.");
+      userName = input;
+      localStorage.setItem("quiz_userName", userName);
+      showPollScreen();
+    }
+
+    function showPollScreen() {
+      document.getElementById("name-screen").style.display = "none";
+      document.getElementById("poll-screen").style.display = "block";
+      listenToHost();
+    }
+
+    function listenToHost() {
+      db.ref("session/activeQuestion").on("value", snapshot => {
+        const qIndex = snapshot.val();
+        if (qIndex === null || qIndex === undefined) return;
+
+        if (qIndex === "finished") {
+          document.getElementById("options-box").innerHTML = "";
+          document.getElementById("mobile-q-text").innerText = "Quiz Completed! Thank you for participating.";
+          document.getElementById("voted-indicator").style.display = "none";
+          return;
+        }
+
+        currentQIndex = qIndex;
+        renderQuestion(qIndex);
+      });
+    }
+
+    function renderQuestion(idx) {
+      const q = questions[idx];
+      document.getElementById("mobile-q-text").innerText = q.q;
+      document.getElementById("voted-indicator").style.display = "none";
+
+      const box = document.getElementById("options-box");
+      box.innerHTML = "";
+
+      const hasVoted = localStorage.getItem(`quiz_voted_q_${idx}`);
+
+      q.options.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.className = "opt-btn";
+        btn.innerText = opt;
+        if (hasVoted) {
+          btn.disabled = true;
+          btn.style.opacity = "0.5";
+        } else {
+          btn.onclick = () => submitVote(idx, opt);
+        }
+        box.appendChild(btn);
+      });
+
+      if (hasVoted) {
+        document.getElementById("voted-indicator").style.display = "block";
+      }
+    }
+
+    function submitVote(qIdx, selectedOption) {
+      const responseRef = db.ref(`session/responses/q${qIdx}`).push();
+      responseRef.set({
+        userName: userName,
+        answer: selectedOption,
+        timestamp: Date.now()
+      });
+
+      localStorage.setItem(`quiz_voted_q_${qIdx}`, selectedOption);
+      renderQuestion(qIdx);
+    }
+  </script>
+</body>
+</html>
