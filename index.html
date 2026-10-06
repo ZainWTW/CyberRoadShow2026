@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quiz Presentation</title>
+  <title>WTW CyberHub Quiz Presentation</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -31,7 +31,7 @@
       overflow: hidden;
     }
 
-    /* Left 75%: Fixed Height Viewport */
+    /* Left 75%: Presentation Area */
     .main-presentation {
       width: 75vw;
       height: 100vh;
@@ -51,18 +51,20 @@
       overflow: hidden;
     }
     .header-left {
-      max-width: 80%;
+      max-width: 78%;
       height: 100%;
       overflow: hidden;
     }
     .quiz-tag {
       font-size: 0.9rem;
-      color: #6b7280;
-      font-weight: 600;
+      color: #702082; /* WTW Purple */
+      font-weight: 700;
       margin-bottom: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
     .question-title {
-      font-size: clamp(1.2rem, 1.8vw, 2rem);
+      font-size: clamp(1.2rem, 1.8vw, 2.1rem);
       font-weight: 800;
       color: #111827;
       letter-spacing: -0.02em;
@@ -77,31 +79,61 @@
       display: flex;
       gap: 8px;
       flex-shrink: 0;
+      align-items: center;
     }
     .controls button {
-      padding: 8px 16px;
-      background: #111827;
+      padding: 9px 16px;
+      background: #702082;
       color: #ffffff;
       border: none;
       border-radius: 8px;
       font-weight: 600;
       font-size: 0.9rem;
       cursor: pointer;
+      transition: background 0.2s;
     }
+    .controls button:hover:not(:disabled) { background: #561864; }
     .controls button:disabled { background: #e5e7eb; color: #9ca3af; cursor: not-allowed; }
-    .btn-export { background: #059669 !important; }
+    
+    .btn-reveal {
+      background: #10b981 !important;
+    }
+    .btn-reveal:hover { background: #059669 !important; }
+    .btn-reset {
+      background: #ef4444 !important;
+    }
+    .btn-reset:hover { background: #dc2626 !important; }
+    .btn-export { background: #702082 !important; }
 
-    /* Strict 2x2 Grid locked to 100% of remaining space */
+    /* 2x2 Grid View with Visual Separator Lines */
     .grid-container {
       flex: 1;
       height: calc(100vh - 150px);
       max-height: calc(100vh - 150px);
       display: grid;
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: calc(50% - 10px) calc(50% - 10px);
-      gap: 20px 48px;
+      grid-template-rows: calc(50% - 1px) calc(50% - 1px);
       overflow: hidden;
       margin-top: 10px;
+      position: relative;
+    }
+
+    /* Quadrant border separator crosshair */
+    #quad-0 {
+      border-right: 1.5px solid #e5e7eb;
+      border-bottom: 1.5px solid #e5e7eb;
+      padding: 10px 28px 14px 10px;
+    }
+    #quad-1 {
+      border-bottom: 1.5px solid #e5e7eb;
+      padding: 10px 10px 14px 28px;
+    }
+    #quad-2 {
+      border-right: 1.5px solid #e5e7eb;
+      padding: 14px 28px 10px 10px;
+    }
+    #quad-3 {
+      padding: 14px 10px 10px 28px;
     }
 
     .quadrant {
@@ -111,9 +143,25 @@
       width: 100%;
       overflow: hidden;
       position: relative;
+      border-radius: 6px;
+      transition: background-color 0.4s ease, opacity 0.4s ease;
     }
 
-    /* Absolute wrapper stops SVG from expanding the layout container */
+    /* Flashing Light Green state for correct answer */
+    @keyframes pulseGreen {
+      0% { background-color: rgba(134, 239, 172, 0.2); }
+      50% { background-color: rgba(134, 239, 172, 0.65); box-shadow: 0 0 25px rgba(34, 197, 94, 0.35); }
+      100% { background-color: rgba(134, 239, 172, 0.35); }
+    }
+    .quadrant.revealed-correct {
+      animation: pulseGreen 1.5s infinite alternate ease-in-out;
+      outline: 2px solid #22c55e;
+      border-radius: 10px;
+    }
+    .quadrant.revealed-dimmed {
+      opacity: 0.3;
+    }
+
     .canvas-box {
       flex: 1;
       width: 100%;
@@ -141,24 +189,24 @@
     .count-num {
       font-size: 1.8rem;
       font-weight: 800;
-      color: #1f2937;
+      color: #702082; /* WTW Purple Numbers */
       min-width: 35px;
     }
     .option-label {
       font-size: clamp(1rem, 1.3vw, 1.4rem);
-      font-weight: 500;
+      font-weight: 600;
       color: #111827;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    /* Right 25% QR Panel */
+    /* 25% QR Sidebar */
     .qr-sidebar {
       width: 25vw;
       height: 100vh;
-      background: #f8fafc;
-      border-left: 2px solid #e2e8f0;
+      background: #faf5ff; /* Soft WTW Tint */
+      border-left: 2px solid #f3e8ff;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -169,10 +217,10 @@
     }
     .qr-card {
       background: #ffffff;
-      padding: 1.5vw;
+      padding: 1.6vw;
       border-radius: 20px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
-      border: 1px solid #e2e8f0;
+      box-shadow: 0 10px 25px -5px rgba(112, 32, 130, 0.1);
+      border: 1px solid #e9d5ff;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -194,12 +242,12 @@
     .qr-title {
       font-size: clamp(1.1rem, 1.4vw, 1.5rem);
       font-weight: 800;
-      color: #0f172a;
+      color: #702082;
       margin: 0;
     }
     .qr-subtitle {
       font-size: clamp(0.75rem, 0.85vw, 0.95rem);
-      color: #64748b;
+      color: #6b7280;
       margin-top: 4px;
     }
 
@@ -225,7 +273,7 @@
       padding: 20px;
       border-radius: 12px;
     }
-    .summary-card h3 { font-size: 1rem; margin: 0 0 12px; color: #111827; }
+    .summary-card h3 { font-size: 1rem; margin: 0 0 12px; color: #702082; }
     .metric-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.9rem; }
     .progress-bar-bg { background: #f3f4f6; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
     .progress-bar-fill { height: 100%; transition: width 0.6s ease; }
@@ -237,38 +285,40 @@
     <div class="main-presentation">
       <header>
         <div class="header-left">
-          <div class="quiz-tag" id="q-tag">Quiz Time. Q1 -</div>
+          <div class="quiz-tag" id="q-tag">CyberHub Quiz. Q1 -</div>
           <div class="question-title" id="q-title">Loading Question...</div>
         </div>
         <div class="controls">
           <button id="prev-btn" onclick="prevQuestion()">Previous</button>
+          <button id="reveal-btn" class="btn-reveal" onclick="toggleReveal()">Reveal Answer</button>
           <button id="next-btn" onclick="nextQuestion()">Next</button>
+          <button id="reset-btn" class="btn-reset" onclick="resetAllVotes()">Reset</button>
         </div>
       </header>
 
       <div class="grid-container" id="quiz-grid">
-        <div class="quadrant">
+        <div class="quadrant" id="quad-0">
           <div class="canvas-box" id="canvas-0"></div>
           <div class="quadrant-footer">
             <div class="count-num" id="count-0">0</div>
             <div class="option-label" id="label-0">Option One</div>
           </div>
         </div>
-        <div class="quadrant">
+        <div class="quadrant" id="quad-1">
           <div class="canvas-box" id="canvas-1"></div>
           <div class="quadrant-footer">
             <div class="count-num" id="count-1">0</div>
             <div class="option-label" id="label-1">Option Two</div>
           </div>
         </div>
-        <div class="quadrant">
+        <div class="quadrant" id="quad-2">
           <div class="canvas-box" id="canvas-2"></div>
           <div class="quadrant-footer">
             <div class="count-num" id="count-2">0</div>
             <div class="option-label" id="label-2">Option Three</div>
           </div>
         </div>
-        <div class="quadrant">
+        <div class="quadrant" id="quad-3">
           <div class="canvas-box" id="canvas-3"></div>
           <div class="quadrant-footer">
             <div class="count-num" id="count-3">0</div>
@@ -278,13 +328,13 @@
       </div>
     </div>
 
-    <!-- QR Sidebar -->
+    <!-- 25% QR Sidebar -->
     <div class="qr-sidebar">
       <div class="qr-card">
-        <h3 class="qr-title">Scan to Vote</h3>
-        <p class="qr-subtitle">Point your phone camera to join</p>
+        <h3 class="qr-title">Scan to Join</h3>
+        <p class="qr-subtitle">Scan via mobile camera to vote</p>
         <div id="qrcode"></div>
-        <p class="qr-subtitle" style="font-weight: 600; color: #0284c7;">No App Install Needed</p>
+        <p class="qr-subtitle" style="font-weight: 700; color: #702082;">WTW CyberHub</p>
       </div>
     </div>
   </div>
@@ -293,7 +343,7 @@
   <div id="summary-view">
     <div style="display: flex; justify-content: space-between; align-items: center;">
       <div>
-        <h2 style="font-size: 2rem; margin: 0; font-weight: 800;">Executive Summary</h2>
+        <h2 style="font-size: 2rem; margin: 0; font-weight: 800; color: #702082;">CyberHub Quiz Summary</h2>
         <span style="color: #6b7280; font-size: 1rem;" id="total-participants-label">Total participants: 0</span>
       </div>
       <div>
@@ -310,62 +360,77 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ================= 2. 10 DUMMY QUESTIONS =================
+    // ================= 2. 10 QUESTIONS WITH CORRECT ANSWER KEYS =================
     const questions = [
       {
         q: "What is the primary entry point for 90% of enterprise breaches?",
-        options: ["Phishing Emails", "Zero-day Exploits", "Brute Force RDP", "Compromised USBs"]
+        options: ["Phishing Emails", "Zero-day Exploits", "Brute Force RDP", "Compromised USBs"],
+        correctIndex: 0
       },
       {
         q: "Which cloud architecture pattern provides the strongest isolation?",
-        options: ["Multi-Tenant Shared", "Single-Tenant VPC", "Serverless Functions", "Shared Database"]
+        options: ["Multi-Tenant Shared", "Single-Tenant VPC", "Serverless Functions", "Shared Database"],
+        correctIndex: 1
       },
       {
         q: "What is the recommended frequency for rotating privileged service account keys?",
-        options: ["Every 30-90 Days", "Once a Year", "Only on Breach", "Never if Complex"]
+        options: ["Every 30-90 Days", "Once a Year", "Only on Breach", "Never if Complex"],
+        correctIndex: 0
       },
       {
         q: "Which protocol is the modern standard for passwordless authentication?",
-        options: ["FIDO2 / WebAuthn", "Kerberos", "NTLMv2", "SAML 1.1"]
+        options: ["FIDO2 / WebAuthn", "Kerberos", "NTLMv2", "SAML 1.1"],
+        correctIndex: 0
       },
       {
         q: "Where should automated DAST security scanning run in your pipeline?",
-        options: ["Staging Deployment", "Local Developer Machine", "Directly in Production", "Only Post-Incident"]
+        options: ["Staging Deployment", "Local Developer Machine", "Directly in Production", "Only Post-Incident"],
+        correctIndex: 0
       },
       {
         q: "Which vulnerability type bypasses client-side firewalls to query internal servers?",
-        options: ["SSRF (Server-Side)", "Cross-Site Scripting (XSS)", "SQL Injection", "Path Traversal"]
+        options: ["SSRF (Server-Side)", "Cross-Site Scripting (XSS)", "SQL Injection", "Path Traversal"],
+        correctIndex: 0
       },
       {
         q: "What is our team's biggest operational focus this quarter?",
-        options: ["Cloud Security Posture", "CI/CD Pipeline Speed", "Mobile App UI", "API Modernization"]
+        options: ["Cloud Security Posture", "CI/CD Pipeline Speed", "Mobile App UI", "API Modernization"],
+        correctIndex: 0
       },
       {
         q: "What is the best defense against API authorization bypass (BOLA/IDOR)?",
-        options: ["Object-Level Checks", "Basic HTTP Auth", "Obscure Query IDs", "WAF Rules Only"]
+        options: ["Object-Level Checks", "Basic HTTP Auth", "Obscure Query IDs", "WAF Rules Only"],
+        correctIndex: 0
       },
       {
         q: "Which primary language should our automation team standardize on?",
-        options: ["PowerShell", "Python", "Go", "TypeScript"]
+        options: ["PowerShell", "Python", "Go", "TypeScript"],
+        correctIndex: 0
       },
       {
-        q: "Should interactive live polling become a standard part of all team meetings?",
-        options: ["Yes, every meeting", "Bi-weekly syncs", "Monthly all-hands only", "Keep it as-is"]
+        q: "Where should employees review WTW security policies and incident steps?",
+        options: ["CyberHub", "External Forums", "Personal Notes", "Unverified Wiki"],
+        correctIndex: 0
       }
     ];
 
-    const quadrantColors = ["#4f6bee", "#f87171", "#2e3b75", "#8c87ed"];
+    // WTW Brand Purple Tones for response dots
+    const quadrantColors = ["#702082", "#8b2ca3", "#5c166d", "#a855f7"];
+
     let currentIndex = 0;
+    let isRevealed = false;
     let allSessionResponses = {};
     let clusterSimulations = [null, null, null, null];
     let clusterData = [[], [], [], []];
 
-    // Build QR Code
+    // QR Code
     const voteUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + "/vote.html";
     new QRCode(document.getElementById("qrcode"), { 
       text: voteUrl, 
       width: 220, 
       height: 220,
+      colorDark : "#702082",
+      colorLight : "#ffffff",
       correctLevel: QRCode.CorrectLevel.H 
     });
 
@@ -374,7 +439,6 @@
     });
 
     function initQuadrantSimulations() {
-      // 1. Completely shut down and purge previous simulation timers
       for (let i = 0; i < 4; i++) {
         if (clusterSimulations[i]) {
           clusterSimulations[i].stop();
@@ -382,13 +446,11 @@
         }
         clusterData[i] = [];
         const container = document.getElementById(`canvas-${i}`);
-        // 2. Erase existing SVGs so they never stack
         while (container.firstChild) {
           container.removeChild(container.firstChild);
         }
       }
 
-      // 3. Re-initialize cleanly
       for (let i = 0; i < 4; i++) {
         const container = document.getElementById(`canvas-${i}`);
         const width = container.clientWidth || 250;
@@ -454,13 +516,47 @@
         .attr("r", sim.dotRadius);
 
       circles.exit().remove();
-
       sim.nodes(data);
       sim.alpha(0.4).restart();
     }
 
+    function clearRevealStyles() {
+      isRevealed = false;
+      document.getElementById("reveal-btn").innerText = "Reveal Answer";
+      for (let i = 0; i < 4; i++) {
+        const quad = document.getElementById(`quad-${i}`);
+        quad.classList.remove("revealed-correct", "revealed-dimmed");
+      }
+    }
+
+    function toggleReveal() {
+      if (currentIndex >= questions.length) return;
+      isRevealed = !isRevealed;
+
+      const correctIdx = questions[currentIndex].correctIndex;
+      const revealBtn = document.getElementById("reveal-btn");
+
+      if (isRevealed) {
+        revealBtn.innerText = "Hide Answer";
+        for (let i = 0; i < 4; i++) {
+          const quad = document.getElementById(`quad-${i}`);
+          if (i === correctIdx) {
+            quad.classList.add("revealed-correct");
+            quad.classList.remove("revealed-dimmed");
+          } else {
+            quad.classList.add("revealed-dimmed");
+            quad.classList.remove("revealed-correct");
+          }
+        }
+      } else {
+        clearRevealStyles();
+      }
+    }
+
     function loadQuestion(index) {
       currentIndex = index;
+      clearRevealStyles();
+
       if (index === questions.length) {
         showFinalSummary();
         return;
@@ -470,11 +566,11 @@
       document.getElementById("summary-view").style.display = "none";
       document.getElementById("next-btn").innerText = (index === questions.length - 1) ? "View Summary →" : "Next";
       document.getElementById("prev-btn").disabled = (index === 0);
+      document.getElementById("reveal-btn").style.display = "inline-block";
 
-      document.getElementById("q-tag").innerText = `Quiz Time. Q${index + 1} -`;
+      document.getElementById("q-tag").innerText = `CyberHub Quiz. Q${index + 1} -`;
       document.getElementById("q-title").innerText = questions[index].q;
 
-      // Reset options text & counts
       for (let i = 0; i < 4; i++) {
         document.getElementById(`label-${i}`).innerText = questions[index].options[i] || "";
         document.getElementById(`count-${i}`).innerText = "0";
@@ -507,10 +603,23 @@
       });
     }
 
+    function resetAllVotes() {
+      const confirmReset = confirm("Reset all quiz responses to 0? This will clear all votes across all questions.");
+      if (!confirmReset) return;
+
+      db.ref("session/responses").remove()
+        .then(() => {
+          loadQuestion(0);
+          alert("All responses have been reset to 0.");
+        })
+        .catch(err => alert("Error: " + err.message));
+    }
+
     function showFinalSummary() {
       db.ref("session/activeQuestion").set("finished");
       document.getElementById("live-presentation-wrapper").style.display = "none";
       document.getElementById("summary-view").style.display = "block";
+      document.getElementById("reveal-btn").style.display = "none";
 
       const container = document.getElementById("summary-cards-container");
       container.innerHTML = "";
@@ -535,10 +644,14 @@
         qObj.options.forEach((opt, optIdx) => {
           const count = tally[opt] || 0;
           const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
-          const color = quadrantColors[optIdx % quadrantColors.length];
+          const isCorrect = (optIdx === qObj.correctIndex);
+          const color = isCorrect ? "#22c55e" : "#702082";
+          
           metricsHtml += `
             <div class="metric-row">
-              <span style="font-weight: 500;">${opt}</span>
+              <span style="font-weight: ${isCorrect ? '700' : '500'}; color: ${isCorrect ? '#15803d' : '#111827'};">
+                ${opt} ${isCorrect ? '✓ (Correct)' : ''}
+              </span>
               <strong>${count} (${pct}%)</strong>
             </div>
             <div class="progress-bar-bg">
@@ -567,22 +680,26 @@
         qObj.options.forEach(opt => tally[opt] = 0);
         responseList.forEach(r => {
           if (tally[r.answer] !== undefined) tally[r.answer]++;
+          const isCorrect = (r.answer === qObj.options[qObj.correctIndex]);
+
           detailedRows.push({
             "Question ID": `Q${idx + 1}`,
             "Question": qObj.q,
             "Participant Name": r.userName || "Anonymous",
             "Selected Answer": r.answer,
+            "Is Correct?": isCorrect ? "CORRECT" : "INCORRECT",
             "Timestamp": r.timestamp ? new Date(r.timestamp).toLocaleString() : "N/A"
           });
         });
 
-        qObj.options.forEach(opt => {
+        qObj.options.forEach((opt, optIdx) => {
           const count = tally[opt] || 0;
           const pct = totalVotes > 0 ? ((count / totalVotes) * 100).toFixed(1) + "%" : "0%";
           summaryRows.push({
             "Question ID": `Q${idx + 1}`,
             "Question": qObj.q,
             "Option": opt,
+            "Is Correct Answer": (optIdx === qObj.correctIndex) ? "YES" : "NO",
             "Votes": count,
             "Percentage": pct,
             "Total Responses": totalVotes
@@ -597,7 +714,7 @@
       XLSX.utils.book_append_sheet(wb, wsSummary, "Overview Summary");
       XLSX.utils.book_append_sheet(wb, wsDetailed, "Individual Responses");
 
-      XLSX.writeFile(wb, `Quiz_Responses_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      XLSX.writeFile(wb, `WTW_CyberHub_Quiz_Results_${new Date().toISOString().slice(0, 10)}.xlsx`);
     }
 
     function nextQuestion() { if (currentIndex <= questions.length - 1) loadQuestion(currentIndex + 1); }
