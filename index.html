@@ -31,7 +31,6 @@
       overflow: hidden;
     }
 
-    /* Left 75%: Presentation Area */
     .main-presentation {
       width: 75vw;
       height: 100vh;
@@ -57,7 +56,7 @@
     }
     .quiz-tag {
       font-size: 0.9rem;
-      color: #702082; /* WTW Purple */
+      color: #702082;
       font-weight: 700;
       margin-bottom: 2px;
       text-transform: uppercase;
@@ -95,13 +94,10 @@
     .controls button:hover:not(:disabled) { background: #561864; }
     .controls button:disabled { background: #e5e7eb; color: #9ca3af; cursor: not-allowed; }
     
-    .btn-reset {
-      background: #ef4444 !important;
-    }
+    .btn-reset { background: #ef4444 !important; }
     .btn-reset:hover { background: #dc2626 !important; }
     .btn-export { background: #702082 !important; }
 
-    /* 2x2 Grid View with Visual Separator Lines */
     .grid-container {
       flex: 1;
       height: calc(100vh - 150px);
@@ -142,7 +138,6 @@
       transition: background-color 0.4s ease, opacity 0.4s ease;
     }
 
-    /* Flashing Light Green state for correct answer */
     @keyframes pulseGreen {
       0% { background-color: rgba(134, 239, 172, 0.2); }
       50% { background-color: rgba(134, 239, 172, 0.65); box-shadow: 0 0 25px rgba(34, 197, 94, 0.35); }
@@ -200,7 +195,6 @@
       line-height: 1.25;
     }
 
-    /* 25% QR Sidebar */
     .qr-sidebar {
       width: 25vw;
       height: 100vh;
@@ -250,7 +244,6 @@
       margin-top: 4px;
     }
 
-    /* Standardized Container for Answer Key & Executive Summary Pages */
     .fullscreen-page {
       display: none;
       width: 100vw;
@@ -267,7 +260,6 @@
       border-bottom: 1.5px solid #e5e7eb;
     }
 
-    /* Answer Key & Accuracy Dashboard Styles */
     .accuracy-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
@@ -313,7 +305,6 @@
       color: #4b5563;
     }
 
-    /* Executive Summary Grid */
     .summary-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -393,7 +384,7 @@
     </div>
   </div>
 
-  <!-- View 2: Answer Key & Accuracy Dashboard (Between Q10 & Summary) -->
+  <!-- View 2: Answer Key & Accuracy Dashboard -->
   <div class="fullscreen-page" id="answer-key-view">
     <div class="page-header">
       <div>
@@ -429,57 +420,57 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ================= 2. UPDATED 10 QUESTIONS WITH CORRECT ANSWERS =================
+    // ================= 2. 10 QUESTIONS WITH CORRECT ANSWERS =================
     const questions = [
       {
         q: "What is the simple rule repeatedly emphasized throughout the presentation?",
         options: ["Trust but verify", "Pause. Verify. Report.", "Report everything immediately", "AI is always correct"],
-        correctIndex: 1 // B
+        correctIndex: 1
       },
       {
         q: "Which of the following can AI make appear real?",
         options: ["Emails only", "Emails and phone calls only", "Emails, calls, videos, and messages", "Websites only"],
-        correctIndex: 2 // C
+        correctIndex: 2
       },
       {
         q: "What should you do before acting on an urgent request involving money or sensitive information?",
         options: ["Respond quickly", "Ignore it", "Verify through a trusted channel", "Forward it to colleagues"],
-        correctIndex: 2 // C
+        correctIndex: 2
       },
       {
         q: "According to the presentation, what remains accountable when AI provides incorrect information?",
         options: ["The AI model vendor", "The chatbot", "The organization deploying the AI", "The customer"],
-        correctIndex: 2 // C
+        correctIndex: 2
       },
       {
         q: "Which of the following was identified as a risk of AI agents?",
         options: ["Faster internet access", "Memory Poisoning", "Increased cloud storage", "Improved reporting"],
-        correctIndex: 1 // B
+        correctIndex: 1
       },
       {
         q: "Why should AI-generated content be reviewed before use?",
         options: ["AI outputs may contain inaccuracies or bias", "AI content cannot be copied", "AI content is always encrypted", "AI automatically publishes information"],
-        correctIndex: 0 // A
+        correctIndex: 0
       },
       {
         q: "What is the biggest risk of entering confidential business data into an unapproved AI tool?",
         options: ["Slower performance", "Increased licensing costs", "Potential data leakage or exposure", "Reduced storage space"],
-        correctIndex: 2 // C
+        correctIndex: 2
       },
       {
         q: "What does \"Human-in-the-Loop\" mean in an AI environment?",
         options: ["AI operates with no human involvement", "Humans supervise and validate important AI decisions", "AI trains humans automatically", "Humans only maintain hardware"],
-        correctIndex: 1 // B
+        correctIndex: 1
       },
       {
         q: "Why are AI agents often compared to privileged users?",
         options: ["They can perform actions and access systems on behalf of users", "They are faster than employees", "They never make mistakes", "They do not require monitoring"],
-        correctIndex: 0 // A
+        correctIndex: 0
       },
       {
         q: "What is the greatest challenge organizations face when adopting AI agents?",
         options: ["Too many employees", "Balancing automation with security and oversight", "Lack of internet connectivity", "Excessive storage capacity"],
-        correctIndex: 1 // B
+        correctIndex: 1
       }
     ];
 
@@ -490,8 +481,9 @@
     let allSessionResponses = {};
     let clusterSimulations = [null, null, null, null];
     let clusterData = [[], [], [], []];
+    let activeQuestionRef = null;
 
-    // QR Code pointing to vote.html
+    // QR Code
     const voteUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + "/vote.html";
     new QRCode(document.getElementById("qrcode"), { 
       text: voteUrl, 
@@ -502,6 +494,7 @@
       correctLevel: QRCode.CorrectLevel.H 
     });
 
+    // Root responses listener
     db.ref("session/responses").on("value", snapshot => {
       allSessionResponses = snapshot.val() || {};
     });
@@ -674,8 +667,11 @@
     }
 
     function listenForResponses(qIndex) {
-      db.ref("session/responses").off();
-      db.ref(`session/responses/q${qIndex}`).on("value", snapshot => {
+      if (activeQuestionRef) {
+        activeQuestionRef.off();
+      }
+      activeQuestionRef = db.ref(`session/responses/q${qIndex}`);
+      activeQuestionRef.on("value", snapshot => {
         const responses = snapshot.val() || {};
         const qOptions = questions[qIndex].options;
         const counts = [0, 0, 0, 0];
@@ -694,6 +690,7 @@
       });
     }
 
+    // Direct Database Query for the Accuracy Page
     function showAnswerKeyView() {
       db.ref("session/activeQuestion").set("finished");
       document.getElementById("live-presentation-wrapper").style.display = "none";
@@ -701,145 +698,164 @@
       document.getElementById("summary-view").style.display = "none";
 
       const container = document.getElementById("accuracy-cards-container");
-      container.innerHTML = "";
+      container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #702082; font-weight: 700; padding: 40px;">Calculating latest responses...</div>`;
 
-      questions.forEach((qObj, idx) => {
-        const responses = allSessionResponses[`q${idx}`] || {};
-        const responseList = Object.values(responses);
-        const totalVotes = responseList.length;
+      // Query database directly to ensure freshest payload
+      db.ref("session/responses").once("value").then(snapshot => {
+        allSessionResponses = snapshot.val() || {};
+        container.innerHTML = "";
 
-        const correctText = qObj.options[qObj.correctIndex];
-        let correctVotes = 0;
+        questions.forEach((qObj, idx) => {
+          const responses = allSessionResponses[`q${idx}`] || {};
+          const responseList = Object.values(responses);
+          const totalVotes = responseList.length;
 
-        responseList.forEach(r => {
-          if (r.answer === correctText) correctVotes++;
+          const correctText = qObj.options[qObj.correctIndex].trim().toLowerCase();
+          let correctVotes = 0;
+
+          responseList.forEach(r => {
+            // Check true flag or string match
+            if (r.isCorrect === true || (r.answer && r.answer.trim().toLowerCase() === correctText)) {
+              correctVotes++;
+            }
+          });
+
+          const pct = totalVotes > 0 ? Math.round((correctVotes / totalVotes) * 100) : 0;
+
+          const card = document.createElement("div");
+          card.className = "accuracy-card";
+          card.innerHTML = `
+            <div>
+              <div class="accuracy-card-header">Q${idx + 1}. ${qObj.q}</div>
+              <div class="correct-answer-pill">
+                <span><strong>Correct:</strong> ${qObj.options[qObj.correctIndex]}</span>
+                <span style="font-size: 1.1rem;">✓</span>
+              </div>
+            </div>
+            <div>
+              <div class="accuracy-metric">
+                <span>Correct Accuracy</span>
+                <strong style="color: ${pct >= 70 ? '#15803d' : '#702082'};">${pct}% (${correctVotes}/${totalVotes})</strong>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" style="width: ${pct}%; background: ${pct >= 70 ? '#22c55e' : '#702082'};"></div>
+              </div>
+            </div>
+          `;
+          container.appendChild(card);
         });
-
-        const pct = totalVotes > 0 ? Math.round((correctVotes / totalVotes) * 100) : 0;
-
-        const card = document.createElement("div");
-        card.className = "accuracy-card";
-        card.innerHTML = `
-          <div>
-            <div class="accuracy-card-header">Q${idx + 1}. ${qObj.q}</div>
-            <div class="correct-answer-pill">
-              <span><strong>Correct:</strong> ${correctText}</span>
-              <span style="font-size: 1.1rem;">✓</span>
-            </div>
-          </div>
-          <div>
-            <div class="accuracy-metric">
-              <span>Correct Accuracy</span>
-              <strong style="color: ${pct >= 70 ? '#15803d' : '#702082'};">${pct}% (${correctVotes}/${totalVotes})</strong>
-            </div>
-            <div class="progress-bar-bg">
-              <div class="progress-bar-fill" style="width: ${pct}%; background: ${pct >= 70 ? '#22c55e' : '#702082'};"></div>
-            </div>
-          </div>
-        `;
-        container.appendChild(card);
       });
     }
 
+    // Direct Database Query for Executive Summary Page
     function showExecutiveSummary() {
       document.getElementById("live-presentation-wrapper").style.display = "none";
       document.getElementById("answer-key-view").style.display = "none";
       document.getElementById("summary-view").style.display = "block";
 
       const container = document.getElementById("summary-cards-container");
-      container.innerHTML = "";
+      container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #702082; font-weight: 700; padding: 40px;">Generating Executive Summary...</div>`;
       const uniqueVoters = new Set();
 
-      questions.forEach((qObj, idx) => {
-        const responses = allSessionResponses[`q${idx}`] || {};
-        const responseList = Object.values(responses);
-        const totalVotes = responseList.length;
+      db.ref("session/responses").once("value").then(snapshot => {
+        allSessionResponses = snapshot.val() || {};
+        container.innerHTML = "";
 
-        const tally = {};
-        qObj.options.forEach(opt => tally[opt] = 0);
-        responseList.forEach(r => {
-          if (tally[r.answer] !== undefined) tally[r.answer]++;
-          if (r.userName) uniqueVoters.add(r.userName);
+        questions.forEach((qObj, idx) => {
+          const responses = allSessionResponses[`q${idx}`] || {};
+          const responseList = Object.values(responses);
+          const totalVotes = responseList.length;
+
+          const tally = {};
+          qObj.options.forEach(opt => tally[opt] = 0);
+          responseList.forEach(r => {
+            if (tally[r.answer] !== undefined) tally[r.answer]++;
+            if (r.userName) uniqueVoters.add(r.userName);
+          });
+
+          const card = document.createElement("div");
+          card.className = "summary-card";
+
+          let metricsHtml = `<h3>Q${idx + 1}: ${qObj.q}</h3>`;
+          qObj.options.forEach((opt, optIdx) => {
+            const count = tally[opt] || 0;
+            const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+            const isCorrect = (optIdx === qObj.correctIndex);
+            const color = isCorrect ? "#22c55e" : "#702082";
+            
+            metricsHtml += `
+              <div class="metric-row">
+                <span style="font-weight: ${isCorrect ? '700' : '500'}; color: ${isCorrect ? '#15803d' : '#111827'};">
+                  ${opt} ${isCorrect ? '✓ (Correct)' : ''}
+                </span>
+                <strong>${count} (${pct}%)</strong>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" style="width: ${pct}%; background: ${color};"></div>
+              </div>
+            `;
+          });
+
+          card.innerHTML = metricsHtml;
+          container.appendChild(card);
         });
 
-        const card = document.createElement("div");
-        card.className = "summary-card";
-
-        let metricsHtml = `<h3>Q${idx + 1}: ${qObj.q}</h3>`;
-        qObj.options.forEach((opt, optIdx) => {
-          const count = tally[opt] || 0;
-          const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
-          const isCorrect = (optIdx === qObj.correctIndex);
-          const color = isCorrect ? "#22c55e" : "#702082";
-          
-          metricsHtml += `
-            <div class="metric-row">
-              <span style="font-weight: ${isCorrect ? '700' : '500'}; color: ${isCorrect ? '#15803d' : '#111827'};">
-                ${opt} ${isCorrect ? '✓ (Correct)' : ''}
-              </span>
-              <strong>${count} (${pct}%)</strong>
-            </div>
-            <div class="progress-bar-bg">
-              <div class="progress-bar-fill" style="width: ${pct}%; background: ${color};"></div>
-            </div>
-          `;
-        });
-
-        card.innerHTML = metricsHtml;
-        container.appendChild(card);
+        document.getElementById("total-participants-label").innerText = `Total participants: ${uniqueVoters.size}`;
       });
-
-      document.getElementById("total-participants-label").innerText = `Total participants: ${uniqueVoters.size}`;
     }
 
     function exportToExcel() {
       const summaryRows = [];
       const detailedRows = [];
 
-      questions.forEach((qObj, idx) => {
-        const responses = allSessionResponses[`q${idx}`] || {};
-        const responseList = Object.values(responses);
-        const totalVotes = responseList.length;
+      db.ref("session/responses").once("value").then(snapshot => {
+        const responsesDb = snapshot.val() || {};
 
-        const tally = {};
-        qObj.options.forEach(opt => tally[opt] = 0);
-        responseList.forEach(r => {
-          if (tally[r.answer] !== undefined) tally[r.answer]++;
-          const isCorrect = (r.answer === qObj.options[qObj.correctIndex]);
+        questions.forEach((qObj, idx) => {
+          const responses = responsesDb[`q${idx}`] || {};
+          const responseList = Object.values(responses);
+          const totalVotes = responseList.length;
 
-          detailedRows.push({
-            "Question ID": `Q${idx + 1}`,
-            "Question": qObj.q,
-            "Participant Name": r.userName || "Anonymous",
-            "Selected Answer": r.answer,
-            "Is Correct?": isCorrect ? "CORRECT" : "INCORRECT",
-            "Timestamp": r.timestamp ? new Date(r.timestamp).toLocaleString() : "N/A"
+          const tally = {};
+          qObj.options.forEach(opt => tally[opt] = 0);
+          responseList.forEach(r => {
+            if (tally[r.answer] !== undefined) tally[r.answer]++;
+            const isCorrect = (r.isCorrect === true || r.answer === qObj.options[qObj.correctIndex]);
+
+            detailedRows.push({
+              "Question ID": `Q${idx + 1}`,
+              "Question": qObj.q,
+              "Participant Name": r.userName || "Anonymous",
+              "Selected Answer": r.answer,
+              "Is Correct?": isCorrect ? "CORRECT" : "INCORRECT",
+              "Timestamp": r.timestamp ? new Date(r.timestamp).toLocaleString() : "N/A"
+            });
+          });
+
+          qObj.options.forEach((opt, optIdx) => {
+            const count = tally[opt] || 0;
+            const pct = totalVotes > 0 ? ((count / totalVotes) * 100).toFixed(1) + "%" : "0%";
+            summaryRows.push({
+              "Question ID": `Q${idx + 1}`,
+              "Question": qObj.q,
+              "Option": opt,
+              "Is Correct Answer": (optIdx === qObj.correctIndex) ? "YES" : "NO",
+              "Votes": count,
+              "Percentage": pct,
+              "Total Responses": totalVotes
+            });
           });
         });
 
-        qObj.options.forEach((opt, optIdx) => {
-          const count = tally[opt] || 0;
-          const pct = totalVotes > 0 ? ((count / totalVotes) * 100).toFixed(1) + "%" : "0%";
-          summaryRows.push({
-            "Question ID": `Q${idx + 1}`,
-            "Question": qObj.q,
-            "Option": opt,
-            "Is Correct Answer": (optIdx === qObj.correctIndex) ? "YES" : "NO",
-            "Votes": count,
-            "Percentage": pct,
-            "Total Responses": totalVotes
-          });
-        });
+        const wb = XLSX.utils.book_new();
+        const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
+        const wsDetailed = XLSX.utils.json_to_sheet(detailedRows);
+
+        XLSX.utils.book_append_sheet(wb, wsSummary, "Overview Summary");
+        XLSX.utils.book_append_sheet(wb, wsDetailed, "Individual Responses");
+
+        XLSX.writeFile(wb, `WTW_CyberHub_Quiz_Results_${new Date().toISOString().slice(0, 10)}.xlsx`);
       });
-
-      const wb = XLSX.utils.book_new();
-      const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
-      const wsDetailed = XLSX.utils.json_to_sheet(detailedRows);
-
-      XLSX.utils.book_append_sheet(wb, wsSummary, "Overview Summary");
-      XLSX.utils.book_append_sheet(wb, wsDetailed, "Individual Responses");
-
-      XLSX.writeFile(wb, `WTW_CyberHub_Quiz_Results_${new Date().toISOString().slice(0, 10)}.xlsx`);
     }
 
     function resetAllVotes() {
