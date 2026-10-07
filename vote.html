@@ -30,7 +30,7 @@
       box-shadow: 0 10px 25px -5px rgba(112, 32, 130, 0.08);
       border: 1px solid #f3e8ff;
     }
-    h2 { font-size: 1.3rem; margin: 0 0 14px; text-align: center; font-weight: 700; color: #702082; }
+    h2 { font-size: 1.25rem; margin: 0 0 14px; text-align: center; font-weight: 700; color: #702082; }
     
     input[type="text"] {
       width: 100%;
@@ -59,7 +59,7 @@
     .opt-btn {
       width: 100%;
       padding: 16px 18px;
-      font-size: 1rem;
+      font-size: 0.98rem;
       font-weight: 600;
       color: #1e293b;
       background: #fdf4ff;
@@ -67,6 +67,7 @@
       border-radius: 12px;
       cursor: pointer;
       text-align: left;
+      line-height: 1.35;
       transition: all 0.15s ease;
     }
     .opt-btn:active { background: #fae8ff; transform: scale(0.98); }
@@ -139,7 +140,7 @@
   <!-- Screen 2: Live Question & Answering -->
   <div class="card" id="poll-screen" style="display: none;">
     <div style="font-size: 0.75rem; color: #702082; font-weight: 700; margin-bottom: 4px; text-transform: uppercase;">CyberHub Question</div>
-    <h2 id="mobile-q-text" style="color: #0f172a; text-align: left;">Waiting for host...</h2>
+    <h2 id="mobile-q-text" style="color: #0f172a; text-align: left; line-height: 1.35;">Waiting for host...</h2>
     
     <div class="options-list" id="options-box"></div>
 
@@ -171,57 +172,57 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 2. QUESTIONS (EXACT MATCH WITH INDEX.HTML)
+    // 2. UPDATED 10 QUESTIONS WITH DESIGNATED CORRECT ANSWERS
     const questions = [
       {
-        q: "What is the primary entry point for 90% of enterprise breaches?",
-        options: ["Phishing Emails", "Zero-day Exploits", "Brute Force RDP", "Compromised USBs"],
-        correctIndex: 0
+        q: "What is the simple rule repeatedly emphasized throughout the presentation?",
+        options: ["Trust but verify", "Pause. Verify. Report.", "Report everything immediately", "AI is always correct"],
+        correctIndex: 1 // B
       },
       {
-        q: "Which cloud architecture pattern provides the strongest isolation?",
-        options: ["Multi-Tenant Shared", "Single-Tenant VPC", "Serverless Functions", "Shared Database"],
-        correctIndex: 1
+        q: "Which of the following can AI make appear real?",
+        options: ["Emails only", "Emails and phone calls only", "Emails, calls, videos, and messages", "Websites only"],
+        correctIndex: 2 // C
       },
       {
-        q: "What is the recommended frequency for rotating privileged service account keys?",
-        options: ["Every 30-90 Days", "Once a Year", "Only on Breach", "Never if Complex"],
-        correctIndex: 0
+        q: "What should you do before acting on an urgent request involving money or sensitive information?",
+        options: ["Respond quickly", "Ignore it", "Verify through a trusted channel", "Forward it to colleagues"],
+        correctIndex: 2 // C
       },
       {
-        q: "Which protocol is the modern standard for passwordless authentication?",
-        options: ["FIDO2 / WebAuthn", "Kerberos", "NTLMv2", "SAML 1.1"],
-        correctIndex: 0
+        q: "According to the presentation, what remains accountable when AI provides incorrect information?",
+        options: ["The AI model vendor", "The chatbot", "The organization deploying the AI", "The customer"],
+        correctIndex: 2 // C
       },
       {
-        q: "Where should automated DAST security scanning run in your pipeline?",
-        options: ["Staging Deployment", "Local Developer Machine", "Directly in Production", "Only Post-Incident"],
-        correctIndex: 0
+        q: "Which of the following was identified as a risk of AI agents?",
+        options: ["Faster internet access", "Memory Poisoning", "Increased cloud storage", "Improved reporting"],
+        correctIndex: 1 // B
       },
       {
-        q: "Which vulnerability type bypasses client-side firewalls to query internal servers?",
-        options: ["SSRF (Server-Side)", "Cross-Site Scripting (XSS)", "SQL Injection", "Path Traversal"],
-        correctIndex: 0
+        q: "Why should AI-generated content be reviewed before use?",
+        options: ["AI outputs may contain inaccuracies or bias", "AI content cannot be copied", "AI content is always encrypted", "AI automatically publishes information"],
+        correctIndex: 0 // A
       },
       {
-        q: "What is our team's biggest operational focus this quarter?",
-        options: ["Cloud Security Posture", "CI/CD Pipeline Speed", "Mobile App UI", "API Modernization"],
-        correctIndex: 0
+        q: "What is the biggest risk of entering confidential business data into an unapproved AI tool?",
+        options: ["Slower performance", "Increased licensing costs", "Potential data leakage or exposure", "Reduced storage space"],
+        correctIndex: 2 // C
       },
       {
-        q: "What is the best defense against API authorization bypass (BOLA/IDOR)?",
-        options: ["Object-Level Checks", "Basic HTTP Auth", "Obscure Query IDs", "WAF Rules Only"],
-        correctIndex: 0
+        q: "What does \"Human-in-the-Loop\" mean in an AI environment?",
+        options: ["AI operates with no human involvement", "Humans supervise and validate important AI decisions", "AI trains humans automatically", "Humans only maintain hardware"],
+        correctIndex: 1 // B
       },
       {
-        q: "Which primary language should our automation team standardize on?",
-        options: ["PowerShell", "Python", "Go", "TypeScript"],
-        correctIndex: 0
+        q: "Why are AI agents often compared to privileged users?",
+        options: ["They can perform actions and access systems on behalf of users", "They are faster than employees", "They never make mistakes", "They do not require monitoring"],
+        correctIndex: 0 // A
       },
       {
-        q: "Where should employees review WTW security policies and incident steps?",
-        options: ["CyberHub", "External Forums", "Personal Notes", "Unverified Wiki"],
-        correctIndex: 0
+        q: "What is the greatest challenge organizations face when adopting AI agents?",
+        options: ["Too many employees", "Balancing automation with security and oversight", "Lack of internet connectivity", "Excessive storage capacity"],
+        correctIndex: 1 // B
       }
     ];
 
@@ -338,7 +339,6 @@
       renderQuestion(qIdx);
     }
 
-    // Displays the individual participant score when the quiz wraps up
     function renderPersonalSummary() {
       document.getElementById("poll-screen").style.display = "none";
       document.getElementById("summary-screen").style.display = "block";
