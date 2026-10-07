@@ -64,11 +64,11 @@
       letter-spacing: 0.05em;
     }
     .question-title {
-      font-size: clamp(1.2rem, 1.8vw, 2.1rem);
+      font-size: clamp(1.1rem, 1.65vw, 1.95rem);
       font-weight: 800;
       color: #111827;
       letter-spacing: -0.02em;
-      line-height: 1.2;
+      line-height: 1.25;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -175,7 +175,7 @@
 
     .quadrant-footer {
       flex-shrink: 0;
-      height: 48px;
+      height: 52px;
       border-top: 2px solid #f3f4f6;
       display: flex;
       align-items: center;
@@ -188,12 +188,16 @@
       min-width: 35px;
     }
     .option-label {
-      font-size: clamp(1rem, 1.3vw, 1.4rem);
+      font-size: clamp(0.95rem, 1.25vw, 1.35rem);
       font-weight: 600;
       color: #111827;
-      white-space: nowrap;
+      white-space: normal;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
       overflow: hidden;
       text-overflow: ellipsis;
+      line-height: 1.25;
     }
 
     /* 25% QR Sidebar */
@@ -263,7 +267,7 @@
       border-bottom: 1.5px solid #e5e7eb;
     }
 
-    /* Page 11: Answer Key & Accuracy Dashboard Styles */
+    /* Answer Key & Accuracy Dashboard Styles */
     .accuracy-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
@@ -309,7 +313,7 @@
       color: #4b5563;
     }
 
-    /* Page 12: Executive Summary Grid */
+    /* Executive Summary Grid */
     .summary-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -425,57 +429,57 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ================= 2. 10 QUESTIONS WITH CORRECT ANSWERS =================
+    // ================= 2. UPDATED 10 QUESTIONS WITH CORRECT ANSWERS =================
     const questions = [
       {
-        q: "What is the primary entry point for 90% of enterprise breaches?",
-        options: ["Phishing Emails", "Zero-day Exploits", "Brute Force RDP", "Compromised USBs"],
-        correctIndex: 0
+        q: "What is the simple rule repeatedly emphasized throughout the presentation?",
+        options: ["Trust but verify", "Pause. Verify. Report.", "Report everything immediately", "AI is always correct"],
+        correctIndex: 1 // B
       },
       {
-        q: "Which cloud architecture pattern provides the strongest isolation?",
-        options: ["Multi-Tenant Shared", "Single-Tenant VPC", "Serverless Functions", "Shared Database"],
-        correctIndex: 1
+        q: "Which of the following can AI make appear real?",
+        options: ["Emails only", "Emails and phone calls only", "Emails, calls, videos, and messages", "Websites only"],
+        correctIndex: 2 // C
       },
       {
-        q: "What is the recommended frequency for rotating privileged service account keys?",
-        options: ["Every 30-90 Days", "Once a Year", "Only on Breach", "Never if Complex"],
-        correctIndex: 0
+        q: "What should you do before acting on an urgent request involving money or sensitive information?",
+        options: ["Respond quickly", "Ignore it", "Verify through a trusted channel", "Forward it to colleagues"],
+        correctIndex: 2 // C
       },
       {
-        q: "Which protocol is the modern standard for passwordless authentication?",
-        options: ["FIDO2 / WebAuthn", "Kerberos", "NTLMv2", "SAML 1.1"],
-        correctIndex: 0
+        q: "According to the presentation, what remains accountable when AI provides incorrect information?",
+        options: ["The AI model vendor", "The chatbot", "The organization deploying the AI", "The customer"],
+        correctIndex: 2 // C
       },
       {
-        q: "Where should automated DAST security scanning run in your pipeline?",
-        options: ["Staging Deployment", "Local Developer Machine", "Directly in Production", "Only Post-Incident"],
-        correctIndex: 0
+        q: "Which of the following was identified as a risk of AI agents?",
+        options: ["Faster internet access", "Memory Poisoning", "Increased cloud storage", "Improved reporting"],
+        correctIndex: 1 // B
       },
       {
-        q: "Which vulnerability type bypasses client-side firewalls to query internal servers?",
-        options: ["SSRF (Server-Side)", "Cross-Site Scripting (XSS)", "SQL Injection", "Path Traversal"],
-        correctIndex: 0
+        q: "Why should AI-generated content be reviewed before use?",
+        options: ["AI outputs may contain inaccuracies or bias", "AI content cannot be copied", "AI content is always encrypted", "AI automatically publishes information"],
+        correctIndex: 0 // A
       },
       {
-        q: "What is our team's biggest operational focus this quarter?",
-        options: ["Cloud Security Posture", "CI/CD Pipeline Speed", "Mobile App UI", "API Modernization"],
-        correctIndex: 0
+        q: "What is the biggest risk of entering confidential business data into an unapproved AI tool?",
+        options: ["Slower performance", "Increased licensing costs", "Potential data leakage or exposure", "Reduced storage space"],
+        correctIndex: 2 // C
       },
       {
-        q: "What is the best defense against API authorization bypass (BOLA/IDOR)?",
-        options: ["Object-Level Checks", "Basic HTTP Auth", "Obscure Query IDs", "WAF Rules Only"],
-        correctIndex: 0
+        q: "What does \"Human-in-the-Loop\" mean in an AI environment?",
+        options: ["AI operates with no human involvement", "Humans supervise and validate important AI decisions", "AI trains humans automatically", "Humans only maintain hardware"],
+        correctIndex: 1 // B
       },
       {
-        q: "Which primary language should our automation team standardize on?",
-        options: ["PowerShell", "Python", "Go", "TypeScript"],
-        correctIndex: 0
+        q: "Why are AI agents often compared to privileged users?",
+        options: ["They can perform actions and access systems on behalf of users", "They are faster than employees", "They never make mistakes", "They do not require monitoring"],
+        correctIndex: 0 // A
       },
       {
-        q: "Where should employees review WTW security policies and incident steps?",
-        options: ["CyberHub", "External Forums", "Personal Notes", "Unverified Wiki"],
-        correctIndex: 0
+        q: "What is the greatest challenge organizations face when adopting AI agents?",
+        options: ["Too many employees", "Balancing automation with security and oversight", "Lack of internet connectivity", "Excessive storage capacity"],
+        correctIndex: 1 // B
       }
     ];
 
@@ -487,7 +491,7 @@
     let clusterSimulations = [null, null, null, null];
     let clusterData = [[], [], [], []];
 
-    // QR Code
+    // QR Code pointing to vote.html
     const voteUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + "/vote.html";
     new QRCode(document.getElementById("qrcode"), { 
       text: voteUrl, 
@@ -609,7 +613,6 @@
       }
     }
 
-    // Next action with 5-second automatic reveal
     function nextQuestionWithReveal() {
       if (currentIndex >= questions.length) return;
 
@@ -633,7 +636,6 @@
           transitionCountdownTimer = null;
           
           if (currentIndex === questions.length - 1) {
-            // After Q10 finishes reveal, transition to Answer Key page
             showAnswerKeyView();
           } else {
             loadQuestion(currentIndex + 1);
@@ -692,7 +694,6 @@
       });
     }
 
-    // View 2: Answer Key & Accuracy Calculation Page
     function showAnswerKeyView() {
       db.ref("session/activeQuestion").set("finished");
       document.getElementById("live-presentation-wrapper").style.display = "none";
@@ -740,7 +741,6 @@
       });
     }
 
-    // View 3: Final Executive Summary Page
     function showExecutiveSummary() {
       document.getElementById("live-presentation-wrapper").style.display = "none";
       document.getElementById("answer-key-view").style.display = "none";
