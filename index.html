@@ -197,7 +197,7 @@
       margin-top: 4px;
     }
 
-    /* Fullscreen Page Container */
+    /* Fullscreen Page Standard */
     .fullscreen-page {
       display: none;
       width: 100vw;
@@ -216,7 +216,7 @@
       flex-shrink: 0;
     }
 
-    /* Page 11: Expanded 4x2 Grid filling 100% of length and width */
+    /* Page 11: Expanded 4x2 Grid filling 100% */
     #answer-key-view {
       display: none;
       flex-direction: column;
@@ -458,6 +458,13 @@
     const firebaseConfig = { databaseURL: "https://wtw-quizroadshow2026-default-rtdb.asia-southeast1.firebasedatabase.app/" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+    // Initialize session ID if not set
+    db.ref("session/sessionId").once("value", snap => {
+      if (!snap.exists()) {
+        db.ref("session/sessionId").set(Date.now());
+      }
+    });
 
     // ================= 2. THE 8 QUESTIONS =================
     const questions = [
@@ -840,13 +847,21 @@
       });
     }
 
+    // Invalidate sessions across all connected voter devices
     function resetAllVotes() {
-      const confirmReset = confirm("Reset all responses to 0? This cannot be undone.");
+      const confirmReset = confirm("Reset all quiz responses to 0? This will invalidate all active voter sessions and restart their quizzes.");
       if (!confirmReset) return;
 
-      db.ref("session/responses").remove()
-        .then(() => alert("All responses have been reset."))
-        .catch(err => alert("Error: " + err.message));
+      const newSessionId = Date.now();
+      Promise.all([
+        db.ref("session/responses").remove(),
+        db.ref("session/sessionId").set(newSessionId)
+      ])
+      .then(() => {
+        backToMonitoring();
+        alert("All responses reset! Connected participant screens have been refreshed.");
+      })
+      .catch(err => alert("Error: " + err.message));
     }
   </script>
 </body>
