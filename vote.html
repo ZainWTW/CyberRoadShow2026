@@ -177,7 +177,7 @@
   <div class="card" id="poll-screen" style="display: none;">
     <div class="timer-container">
       <div class="question-timer-pill" id="question-timer-label">⏱ 15s remaining</div>
-      <div class="total-timer-pill" id="total-timer-label">Total Time: 02:00</div>
+      <div class="total-timer-pill" id="total-timer-label">Total: 02:00</div>
     </div>
 
     <div style="font-size: 0.75rem; color: #702082; font-weight: 700; margin-bottom: 4px; text-transform: uppercase;" id="mobile-q-tag">CyberHub Question 1 of 8</div>
@@ -263,8 +263,59 @@
     // Timer Variables
     let questionSecondsLeft = 15;
     let questionTimerInterval = null;
-    let totalSecondsLeft = 120; // 2 minutes total
+    let totalSecondsLeft = 120;
     let totalTimerInterval = null;
+
+    // Session Management
+    let localSessionId = localStorage.getItem("quiz_sessionId") || null;
+
+    // Real-Time Invalidation Listener
+    db.ref("session/sessionId").on("value", snapshot => {
+      const serverSessionId = snapshot.val();
+      if (!serverSessionId) return;
+
+      const serverIdStr = String(serverSessionId);
+
+      if (localSessionId && localSessionId !== serverIdStr) {
+        // Detected a Reset event from presenter
+        invalidateSession(serverIdStr);
+      } else if (!localSessionId) {
+        localSessionId = serverIdStr;
+        localStorage.setItem("quiz_sessionId", localSessionId);
+      }
+    });
+
+    function invalidateSession(newSessionId) {
+      localSessionId = newSessionId;
+      localStorage.setItem("quiz_sessionId", localSessionId);
+
+      // Wipe all local answer cache
+      for (let i = 0; i < questions.length; i++) {
+        localStorage.removeItem(`quiz_voted_q_${i}`);
+      }
+
+      // Stop running intervals
+      clearInterval(questionTimerInterval);
+      clearInterval(totalTimerInterval);
+
+      currentQIndex = 0;
+      totalSecondsLeft = 120;
+      questionSecondsLeft = 15;
+
+      // Re-initialize voter screen
+      if (userName) {
+        document.getElementById("name-screen").style.display = "none";
+        document.getElementById("poll-screen").style.display = "block";
+        document.getElementById("summary-screen").style.display = "none";
+        startTotalQuizTimer();
+        renderQuestion(0);
+        alert("The host has reset the quiz. Your questions have restarted!");
+      } else {
+        document.getElementById("name-screen").style.display = "block";
+        document.getElementById("poll-screen").style.display = "none";
+        document.getElementById("summary-screen").style.display = "none";
+      }
+    }
 
     if (userName) showPollScreen();
 
@@ -285,6 +336,7 @@
     }
 
     function startTotalQuizTimer() {
+      clearInterval(totalTimerInterval);
       totalTimerInterval = setInterval(() => {
         totalSecondsLeft--;
         const m = Math.floor(totalSecondsLeft / 60);
