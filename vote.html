@@ -12,7 +12,7 @@
     body {
       margin: 0;
       padding: 16px;
-      background: #faf5ff; /* Soft WTW Tint */
+      background: #faf5ff;
       color: #0f172a;
       font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
       min-height: 100vh;
@@ -25,7 +25,7 @@
       width: 100%;
       max-width: 440px;
       background: #ffffff;
-      padding: 26px 20px;
+      padding: 24px 20px;
       border-radius: 18px;
       box-shadow: 0 10px 25px -5px rgba(112, 32, 130, 0.08);
       border: 1px solid #f3e8ff;
@@ -55,10 +55,34 @@
       cursor: pointer;
     }
 
+    /* Timers Display Header */
+    .timer-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #f3e8ff;
+    }
+    .question-timer-pill {
+      background: #fdf4ff;
+      border: 1.5px solid #d8b4fe;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #702082;
+    }
+    .total-timer-pill {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+
     .options-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
     .opt-btn {
       width: 100%;
-      padding: 16px 18px;
+      padding: 15px 18px;
       font-size: 0.98rem;
       font-weight: 600;
       color: #1e293b;
@@ -72,7 +96,6 @@
     }
     .opt-btn:active { background: #fae8ff; transform: scale(0.98); }
 
-    /* Answer feedback alerts */
     .feedback-banner {
       display: none;
       padding: 14px 16px;
@@ -94,7 +117,20 @@
       border: 1.5px solid #fde68a;
     }
 
-    /* Score Summary View */
+    .voter-next-btn {
+      display: none;
+      width: 100%;
+      padding: 15px;
+      margin-top: 16px;
+      background: #702082;
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
     .score-circle {
       width: 110px;
       height: 110px;
@@ -129,38 +165,43 @@
 </head>
 <body>
 
-  <!-- Screen 1: Name Input -->
+  <!-- Screen 1: Registration -->
   <div class="card" id="name-screen">
     <h2>WTW CyberHub Quiz</h2>
-    <p style="text-align: center; color: #64748b; font-size: 0.9rem; margin-top: -6px;">Enter your name to participate</p>
+    <p style="text-align: center; color: #64748b; font-size: 0.9rem; margin-top: -6px;">Enter your name to begin (15s / Q | 2m Total)</p>
     <input type="text" id="username-input" placeholder="Full Name" />
-    <button class="primary-btn" onclick="saveName()">Join Session</button>
+    <button class="primary-btn" onclick="saveName()">Start Quiz</button>
   </div>
 
-  <!-- Screen 2: Live Question & Answering -->
+  <!-- Screen 2: Timed Voting Session -->
   <div class="card" id="poll-screen" style="display: none;">
-    <div style="font-size: 0.75rem; color: #702082; font-weight: 700; margin-bottom: 4px; text-transform: uppercase;">CyberHub Question</div>
-    <h2 id="mobile-q-text" style="color: #0f172a; text-align: left; line-height: 1.35;">Waiting for host...</h2>
+    <div class="timer-container">
+      <div class="question-timer-pill" id="question-timer-label">⏱ 15s remaining</div>
+      <div class="total-timer-pill" id="total-timer-label">Total Time: 02:00</div>
+    </div>
+
+    <div style="font-size: 0.75rem; color: #702082; font-weight: 700; margin-bottom: 4px; text-transform: uppercase;" id="mobile-q-tag">CyberHub Question 1 of 8</div>
+    <h2 id="mobile-q-text" style="color: #0f172a; text-align: left; line-height: 1.35;">Loading Question...</h2>
     
     <div class="options-list" id="options-box"></div>
 
-    <!-- Correct Prompt -->
     <div id="feedback-correct" class="feedback-banner feedback-correct">
       🎉 Congratulations! That is the correct answer!
     </div>
 
-    <!-- Incorrect / CyberHub Policy Review Prompt -->
     <div id="feedback-incorrect" class="feedback-banner feedback-incorrect">
-      ⚠️ That's not quite right. Please review our cybersecurity policies and incident guidance in <strong>CyberHub</strong>.
+      ⚠️ That's not quite right. Review policies in <strong>CyberHub</strong>.
     </div>
+
+    <button id="voter-next-btn" class="voter-next-btn" onclick="goToNextQuestion()">Next Question →</button>
   </div>
 
-  <!-- Screen 3: Final Participant Scorecard -->
+  <!-- Screen 3: Individual Results -->
   <div class="card" id="summary-screen" style="display: none;">
     <h2>Your Final Results</h2>
     <p style="text-align: center; color: #64748b; font-size: 0.9rem; margin-top: -6px;">Quiz Completed</p>
     
-    <div class="score-circle" id="user-score-badge">0/10</div>
+    <div class="score-circle" id="user-score-badge">0/8</div>
     <p id="score-comment" style="text-align: center; font-weight: 600; color: #702082; margin-bottom: 20px;"></p>
 
     <div id="score-details" style="max-height: 250px; overflow-y: auto; border: 1px solid #f1f5f9; border-radius: 8px;"></div>
@@ -172,62 +213,58 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 2. UPDATED 10 QUESTIONS WITH DESIGNATED CORRECT ANSWERS
+    // 2. THE 8 QUESTIONS
     const questions = [
       {
         q: "What is the simple rule repeatedly emphasized throughout the presentation?",
         options: ["Trust but verify", "Pause. Verify. Report.", "Report everything immediately", "AI is always correct"],
-        correctIndex: 1 // B
+        correctIndex: 1
       },
       {
         q: "Which of the following can AI make appear real?",
         options: ["Emails only", "Emails and phone calls only", "Emails, calls, videos, and messages", "Websites only"],
-        correctIndex: 2 // C
-      },
-      {
-        q: "What should you do before acting on an urgent request involving money or sensitive information?",
-        options: ["Respond quickly", "Ignore it", "Verify through a trusted channel", "Forward it to colleagues"],
-        correctIndex: 2 // C
+        correctIndex: 2
       },
       {
         q: "According to the presentation, what remains accountable when AI provides incorrect information?",
         options: ["The AI model vendor", "The chatbot", "The organization deploying the AI", "The customer"],
-        correctIndex: 2 // C
+        correctIndex: 2
       },
       {
         q: "Which of the following was identified as a risk of AI agents?",
         options: ["Faster internet access", "Memory Poisoning", "Increased cloud storage", "Improved reporting"],
-        correctIndex: 1 // B
+        correctIndex: 1
       },
       {
         q: "Why should AI-generated content be reviewed before use?",
         options: ["AI outputs may contain inaccuracies or bias", "AI content cannot be copied", "AI content is always encrypted", "AI automatically publishes information"],
-        correctIndex: 0 // A
-      },
-      {
-        q: "What is the biggest risk of entering confidential business data into an unapproved AI tool?",
-        options: ["Slower performance", "Increased licensing costs", "Potential data leakage or exposure", "Reduced storage space"],
-        correctIndex: 2 // C
+        correctIndex: 0
       },
       {
         q: "What does \"Human-in-the-Loop\" mean in an AI environment?",
         options: ["AI operates with no human involvement", "Humans supervise and validate important AI decisions", "AI trains humans automatically", "Humans only maintain hardware"],
-        correctIndex: 1 // B
+        correctIndex: 1
       },
       {
         q: "Why are AI agents often compared to privileged users?",
         options: ["They can perform actions and access systems on behalf of users", "They are faster than employees", "They never make mistakes", "They do not require monitoring"],
-        correctIndex: 0 // A
+        correctIndex: 0
       },
       {
         q: "What is the greatest challenge organizations face when adopting AI agents?",
         options: ["Too many employees", "Balancing automation with security and oversight", "Lack of internet connectivity", "Excessive storage capacity"],
-        correctIndex: 1 // B
+        correctIndex: 1
       }
     ];
 
-    let currentQIndex = -1;
+    let currentQIndex = 0;
     let userName = localStorage.getItem("quiz_userName") || "";
+
+    // Timer Variables
+    let questionSecondsLeft = 15;
+    let questionTimerInterval = null;
+    let totalSecondsLeft = 120; // 2 minutes total
+    let totalTimerInterval = null;
 
     if (userName) showPollScreen();
 
@@ -243,43 +280,68 @@
       document.getElementById("name-screen").style.display = "none";
       document.getElementById("poll-screen").style.display = "block";
       document.getElementById("summary-screen").style.display = "none";
-      listenToHost();
+      startTotalQuizTimer();
+      renderQuestion(currentQIndex);
     }
 
-    function listenToHost() {
-      db.ref("session/activeQuestion").on("value", snapshot => {
-        const qIndex = snapshot.val();
-        if (qIndex === null || qIndex === undefined) return;
+    function startTotalQuizTimer() {
+      totalTimerInterval = setInterval(() => {
+        totalSecondsLeft--;
+        const m = Math.floor(totalSecondsLeft / 60);
+        const s = totalSecondsLeft % 60;
+        document.getElementById("total-timer-label").innerText = `Total: ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 
-        // Reset user local cache if host restarts from Q1
-        if (qIndex === 0) {
-          for (let i = 0; i < questions.length; i++) {
-            localStorage.removeItem(`quiz_voted_q_${i}`);
-          }
-        }
-
-        // Show individual Score Summary if host finished the presentation
-        if (qIndex === "finished") {
+        if (totalSecondsLeft <= 0) {
+          clearInterval(totalTimerInterval);
+          clearInterval(questionTimerInterval);
           renderPersonalSummary();
-          return;
         }
+      }, 1000);
+    }
 
-        document.getElementById("poll-screen").style.display = "block";
-        document.getElementById("summary-screen").style.display = "none";
+    function startQuestionTimer() {
+      clearInterval(questionTimerInterval);
+      questionSecondsLeft = 15;
+      document.getElementById("question-timer-label").innerText = `⏱ ${questionSecondsLeft}s remaining`;
 
-        currentQIndex = qIndex;
-        renderQuestion(qIndex);
-      });
+      questionTimerInterval = setInterval(() => {
+        questionSecondsLeft--;
+        document.getElementById("question-timer-label").innerText = `⏱ ${questionSecondsLeft}s remaining`;
+
+        if (questionSecondsLeft <= 0) {
+          clearInterval(questionTimerInterval);
+          handleTimeOut();
+        }
+      }, 1000);
+    }
+
+    function handleTimeOut() {
+      if (!localStorage.getItem(`quiz_voted_q_${currentQIndex}`)) {
+        submitVote(currentQIndex, "Timed Out (No Answer)", -1);
+      }
     }
 
     function renderQuestion(idx) {
+      if (idx >= questions.length) {
+        clearInterval(totalTimerInterval);
+        clearInterval(questionTimerInterval);
+        renderPersonalSummary();
+        return;
+      }
+
+      startQuestionTimer();
+
       const q = questions[idx];
+      document.getElementById("mobile-q-tag").innerText = `CyberHub Question ${idx + 1} of ${questions.length}`;
       document.getElementById("mobile-q-text").innerText = q.q;
 
       const fbCorrect = document.getElementById("feedback-correct");
       const fbIncorrect = document.getElementById("feedback-incorrect");
+      const nextBtn = document.getElementById("voter-next-btn");
+
       fbCorrect.style.display = "none";
       fbIncorrect.style.display = "none";
+      nextBtn.style.display = "none";
 
       const box = document.getElementById("options-box");
       box.innerHTML = "";
@@ -306,18 +368,21 @@
         box.appendChild(btn);
       });
 
-      // Restore feedback banner if already voted
       if (savedAnswer) {
+        clearInterval(questionTimerInterval);
         const isCorrect = (savedAnswer === q.options[q.correctIndex]);
         if (isCorrect) fbCorrect.style.display = "block";
         else fbIncorrect.style.display = "block";
+
+        nextBtn.style.display = "block";
+        nextBtn.innerText = (idx === questions.length - 1) ? "View Final Score →" : "Next Question →";
       }
     }
 
     function submitVote(qIdx, selectedOption, optIdx) {
+      clearInterval(questionTimerInterval);
       const isCorrect = (optIdx === questions[qIdx].correctIndex);
 
-      // Record in Firebase
       const responseRef = db.ref(`session/responses/q${qIdx}`).push();
       responseRef.set({
         userName: userName,
@@ -326,17 +391,30 @@
         timestamp: Date.now()
       });
 
-      // Save user answer locally
       localStorage.setItem(`quiz_voted_q_${qIdx}`, selectedOption);
 
-      // Show immediate feedback banners
       if (isCorrect) {
         document.getElementById("feedback-correct").style.display = "block";
       } else {
         document.getElementById("feedback-incorrect").style.display = "block";
       }
 
+      const nextBtn = document.getElementById("voter-next-btn");
+      nextBtn.style.display = "block";
+      nextBtn.innerText = (qIdx === questions.length - 1) ? "View Final Score →" : "Next Question →";
+
       renderQuestion(qIdx);
+    }
+
+    function goToNextQuestion() {
+      currentQIndex++;
+      if (currentQIndex < questions.length) {
+        renderQuestion(currentQIndex);
+      } else {
+        clearInterval(totalTimerInterval);
+        clearInterval(questionTimerInterval);
+        renderPersonalSummary();
+      }
     }
 
     function renderPersonalSummary() {
@@ -358,7 +436,7 @@
         item.className = "score-item";
         item.innerHTML = `
           <div>
-            <strong>Q${idx + 1}</strong>: ${userAnswer ? userAnswer : '<em>Not answered</em>'}
+            <strong>Q${idx + 1}</strong>: ${userAnswer ? userAnswer : '<em>Timed out / Unanswered</em>'}
           </div>
           <span class="status-badge ${isCorrect ? 'badge-correct' : 'badge-wrong'}">
             ${isCorrect ? 'Correct' : 'Review CyberHub'}
@@ -370,8 +448,8 @@
       document.getElementById("user-score-badge").innerText = `${score}/${questions.length}`;
 
       let comment = "";
-      if (score >= 9) comment = "Excellent work! Security champion level!";
-      else if (score >= 6) comment = "Good effort! Check CyberHub for a quick refresher.";
+      if (score >= 7) comment = "Excellent work! Security champion level!";
+      else if (score >= 5) comment = "Good effort! Check CyberHub for a quick refresher.";
       else comment = "Please visit CyberHub to review our cybersecurity policies.";
 
       document.getElementById("score-comment").innerText = comment;
